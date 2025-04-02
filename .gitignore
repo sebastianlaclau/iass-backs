@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+.venv/
+env/
+# Environment variables
+.env
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+TODO.txt
+
+googlekey.json
+google_credentials.json
+
+scripts/
+
+borrar.py
+
+webhook.disabled.py

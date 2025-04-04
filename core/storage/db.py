@@ -3,7 +3,8 @@ import logging
 from typing import Dict, List
 import uuid
 
-from pytz import timezone
+import datetime
+from datetime import timezone
 
 from core.models.waba import WABAConfig
 
@@ -156,11 +157,11 @@ class DBStorage:
                 return self._create_conversation(waba_id, phone_number)
 
             conv = result.data[0]
-            last_activity = datetime.strptime(
+            last_activity = datetime.datetime.strptime(
                 conv["last_activity_at"].split(".")[0], "%Y-%m-%dT%H:%M:%S"
-            ).replace(tzinfo=timezone.utc)
+            ).replace(tzinfo=timezone.utc)  # Use timezone.utc directly
 
-            if datetime.now(timezone.utc) - last_activity > datetime.timedelta(
+            if datetime.datetime.now(timezone.utc) - last_activity > datetime.timedelta(
                 hours=24
             ):
                 self.archive_conversation(conv["id"])
@@ -225,7 +226,7 @@ class DBStorage:
 
     def _update_conversation_activity(self, conversation_id: str) -> None:
         self.supabase.table("conversations").update(
-            {"last_activity_at": datetime.now(timezone.utc).isoformat()}
+            {"last_activity_at": datetime.datetime.now(timezone.utc).isoformat()}
         ).eq("id", conversation_id).execute()
 
     async def update_message_metadata(

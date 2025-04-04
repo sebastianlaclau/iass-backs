@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import httpx
 from core.utils.supabase_client import supabase
@@ -20,7 +20,7 @@ async def upload_to_supabase_audio_bucket(
             response.raise_for_status()
             file_buffer = response.content
 
-        file_name = f"{datetime.now().timestamp()}.ogg"
+        file_name = f"{datetime.now(datetime.timezone.utc).timestamp()}.ogg"
         file_path = f"audio/{file_name}"
 
         result = supabase.storage.from_("audios_bucket").upload(
@@ -78,7 +78,7 @@ async def upsert_waba(id: str, name: str, phone_number_id: str) -> Dict[str, Any
                     "id": id,
                     "name": name,
                     "phone_number_id": phone_number_id,
-                    "updated_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now(datetime.timezone.utc).isoformat(),
                 },
                 on_conflict=["id"],
             )
@@ -109,7 +109,7 @@ def upsert_thread(
                     "user_phone_number": user_phone_number,
                     "openai_thread_id": openai_thread_id,
                     "local_thread_id": local_thread_id,
-                    "updated_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now(datetime.timezone.utc).isoformat(),
                 },
                 on_conflict=["openai_thread_id"],
             )
@@ -137,7 +137,7 @@ def save_message_to_db(
                     "message_content": message_content,
                     "message_direction": message_direction,
                     "content_type": content_type,
-                    "created_at": datetime.now().isoformat(),
+                    "created_at": datetime.now(datetime.timezone.utc).isoformat(),
                 }
             )
             .execute()
@@ -246,7 +246,7 @@ async def save_log_to_db(message: Any, waba: Optional[str] = None) -> Optional[s
         .insert(
             {
                 "message": message_string,
-                "created_at": datetime.now().isoformat(),
+                "created_at": datetime.now(datetime.timezone.utc).isoformat(),
                 "waba": waba or "undefined",
             }
         )

@@ -1,3 +1,4 @@
+# core/config/manager.py
 from typing import Dict, Optional
 from core.models.config import ProjectConfig, ClientConfig
 

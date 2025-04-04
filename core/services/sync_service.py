@@ -35,7 +35,7 @@ class SyncService:
 
             logger.warning(f"📱 Procesando teléfonos: {enabled_phones}")
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(datetime.timezone.utc)
 
             for phone in enabled_phones:
                 # Buscar todas las conversaciones activas para este número

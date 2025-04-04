@@ -1,4 +1,4 @@
-# clients/iass-back-emprendemy/config.py
+# clients/iass_back_emprendemy/config.py
 from pydantic_settings import BaseSettings
 from core.models.config import WABAConfig
 
@@ -15,19 +15,19 @@ class EmprendemyClientSettings(BaseSettings):
     OPENAI_ASSIST_ID_EMPRENDEMY: str
     OPENAI_API_KEY_EMPRENDEMY: str
     APP_ID_EMPRENDEMY: str
-    FB_VERIFY_TOKEN: str = "chota"
+    FB_VERIFY_TOKEN: str = "prasath"
 
     # Required base settings
     SUPABASE_URL: str
     SUPABASE_SERVICE_ROLE_KEY: str
 
     class Config:
-        env_file = ".env"
+        env_file = "clients/iass_back_emprendemy/.env"
         env_file_encoding = "utf-8"
         extra = "allow"  # Allow extra fields
 
-    def get_waba_config(self) -> WABAConfig:
-        """Convert settings to WABAConfig"""
+    def create_waba_config(self) -> WABAConfig:
+        """Create initial WABA configuration from settings"""
         return WABAConfig(
             phone_number=self.PHONE_NUMBER_EMPRENDEMY,
             waba_id=self.FB_WABA_EMPRENDEMY,

@@ -1,4 +1,4 @@
-# clients/iass-back-emprendemy/prompts.py
+# clients/iass_back_emprendemy/prompts.py
 from jinja2 import Template
 from core.models.enums import MessageCategory
 

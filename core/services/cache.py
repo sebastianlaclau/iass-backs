@@ -1,7 +1,5 @@
 # core/services/cache.py
 import logging
-
-# from core.config import Settings
 from core.data.tools_definition import TOOLS_DEFINITION
 from core.models.waba import WABAConfig, InstructionsStrategy
 
@@ -20,8 +18,6 @@ class WABAConfigCache:
         """Obtiene configuración con soporte para múltiples clientes"""
         cache_key = f"{client_id}:{waba_id}"
 
-        logger.debug(f"Getting config for client {client_id}, WABA {waba_id}")
-
         if cache_key in self._cache:
             return self._cache[cache_key]
 
@@ -37,14 +33,47 @@ class WABAConfigCache:
 
     async def _load_from_db(self, client_id: str, waba_id: str) -> WABAConfig:
         try:
-            # Ajustar query para filtrar por cliente_id también
-            waba_data = (
-                await self.supabase_client.from_("wabas")
-                .select("*")
-                .eq("waba_id", waba_id)
-                .eq("client_id", client_id)
-                .single()
-            )
+            # Add more detailed logging
+            logger.info(f"Querying database for WABA with external_waba_id={waba_id}")
+
+            # Try to get data from database
+            try:
+                query_result = (
+                    self.supabase_client.from_("wabas")
+                    .select("*")
+                    .eq("external_waba_id", waba_id)
+                    .execute()
+                )
+
+                if not query_result.data or len(query_result.data) == 0:
+                    logger.warning(
+                        f"No WABA found with external_waba_id={waba_id}, using fallback configuration"
+                    )
+
+                    # Get client configuration for fallback values
+                    client_config = config_manager.get_client_config(client_id)
+                    if not client_config:
+                        raise ValueError(
+                            f"No configuration found for client {client_id}"
+                        )
+
+                    # Get default values from project config
+                    project_config = self.project_config
+
+                    # Use fallback config directly from client_config
+                    return client_config.waba_config
+
+                # Use the first result if multiple were returned
+                db_waba_data = query_result.data[0]
+
+            except Exception as db_error:
+                logger.warning(
+                    f"Database query failed: {str(db_error)}, using fallback configuration"
+                )
+                client_config = config_manager.get_client_config(client_id)
+                if not client_config:
+                    raise ValueError(f"No configuration found for client {client_id}")
+                return client_config.waba_config
 
             # Get client configuration
             client_config = config_manager.get_client_config(client_id)
@@ -56,16 +85,16 @@ class WABAConfigCache:
 
             # Construir configuración con datos de cliente específicos
             config = WABAConfig(
-                name=waba_data["name"],
-                phone_number=waba_data["phone_number"],
-                phone_number_id=waba_data["phone_number_id"],
-                permanent_token=waba_data["permanent_token"],
+                name=db_waba_data.get("name", f"Default WABA for {client_id}"),
+                phone_number=db_waba_data.get("phone_number", ""),
+                phone_number_id=db_waba_data.get("phone_number_id", ""),
+                permanent_token=db_waba_data.get("permanent_token", ""),
                 # Get values from client config or use project defaults
                 assistant_id=client_config.waba_config.openai_assist_id,
                 openai_key=client_config.waba_config.openai_api_key,
                 model=project_config.OPENAI_MODEL_DEFAULT,
                 tools=TOOLS_DEFINITION,
-                instructions_strategy=InstructionsStrategy.SINGLE,
+                instructions_strategy=client_config.waba_config.instructions_strategy,
                 pinecone_key=project_config.PINECONE_KEY_DEFAULT,
                 temperature=0.3,
                 vector_store="",
@@ -75,6 +104,7 @@ class WABAConfigCache:
                 sender_email=project_config.SENDER_EMAIL,
                 admin_email=project_config.ADMIN_EMAIL,
                 email_password=project_config.EMAIL_PASSWORD,
+                client_id=client_id,
             )
 
             return config

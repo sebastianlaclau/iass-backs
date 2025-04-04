@@ -1,4 +1,4 @@
-# clients/iass-back-emprendemy/constants.py
+# clients/iass_back_emprendemy/constants.py
 
 from core.models.course import PriceInfo
 

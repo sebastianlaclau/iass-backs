@@ -150,3 +150,5 @@ hay veces que cuando llama a una funcion ademas tambien manda un texto, y ahora 
 # TimeoutError: Could not acquire lock for 5491135568298_365401589983890 after 30 seconds
 
 # webhook.py:2308 - INFO - Completed message processing for 5491135568298
+
+# TODO sistema mas robusto de background tasks like reddit o rabbitMQ

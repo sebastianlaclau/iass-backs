@@ -1,4 +1,4 @@
-# core/webhooks/webhook_verification.py
+# core/routers/meta_webhooks/verification.py
 import logging
 from fastapi import APIRouter, Request, Response
 from core.config import config_manager
@@ -8,10 +8,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/webhook_verification")
+# TODO FUNCIONA PERO LA HICIMOS PARA CUANDO IBAMOS A MANEJAR DISTINTOS WEBHOOKS, AHORA NO TIENE SENTIDO POR EJEMPLO AGARRAR EL CLIEN ID, YA NO ESTA LLEGANDO.
+@router.get("/webhook")
 async def handle_webhook_verification(request: Request):
-    print("WEBHOOK VERIFICATION CALLED")
-    logger.error("Webhook verification called - this should be visible")
     # Extract client ID from path
     path_parts = request.url.path.split("/")
     # Path should be like /api/v1/client_id/webhook_verification

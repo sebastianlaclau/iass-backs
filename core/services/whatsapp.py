@@ -2,7 +2,9 @@
 
 import httpx
 from typing import Dict, Any, List
-from core.utils.helpers import get_waba_config, WABAConfig
+from core.utils.helpers import WABAConfig
+from core.services.waba import get_waba_config
+import json
 import aiohttp
 import requests
 import logging
@@ -10,33 +12,84 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# async def send_text_response_to_wa(answer: str, to: str, waba_conf: WABAConfig):
+#     try:
+#         # Log the parameters being used
+#         # logger.info(f"Sending message to WhatsApp. To: {to}, Message: {answer}")
+
+#         # Your existing send_text_response_to_wa logic here
+#         url = f"https://graph.facebook.com/v12.0/{waba_conf.phone_number_id}/messages"
+#         headers = {
+#             "Authorization": f"Bearer {waba_conf.permanent_token}",
+#             "Content-Type": "application/json",
+#         }
+#         payload = {
+#             "messaging_product": "whatsapp",
+#             "to": to,
+#             "type": "text",
+#             "text": {"body": answer},
+#         }
+
+#         async with aiohttp.ClientSession() as session:
+#             async with session.post(url, headers=headers, json=payload) as response:
+#                 if response.status == 200:
+#                     # logger.info("Message sent successfully")
+#                     pass
+#                 else:
+#                     error_text = await response.text()
+#                     logger.error(
+#                         f"Failed to send message. Status: {response.status}, Response: {error_text}"
+#                     )
+#                     raise Exception(f"WhatsApp API error: {error_text}")
+
+#     except Exception as e:
+#         logger.error(f"Error in send_text_response_to_wa: {str(e)}", exc_info=True)
+#         raise  # Re-raise the exception after logging
+
+
 async def send_text_response_to_wa(answer: str, to: str, waba_conf: WABAConfig):
     try:
-        # Log the parameters being used
-        # logger.info(f"Sending message to WhatsApp. To: {to}, Message: {answer}")
+        # Detailed logging
+        logger.info(
+            f"Sending message to WhatsApp. To: {to}, Phone ID: {waba_conf.phone_number_id}"
+        )
+        logger.debug(f"Message content (first 50 chars): {answer[:50]}...")
 
-        # Your existing send_text_response_to_wa logic here
-        url = f"https://graph.facebook.com/v12.0/{waba_conf.phone_number_id}/messages"
+        url = f"https://graph.facebook.com/v17.0/{waba_conf.phone_number_id}/messages"
+        logger.debug(f"WhatsApp API URL: {url}")
+
         headers = {
             "Authorization": f"Bearer {waba_conf.permanent_token}",
             "Content-Type": "application/json",
         }
+        logger.debug(
+            f"Using phone_number_id: {waba_conf.phone_number_id}, token length: {len(waba_conf.permanent_token)}"
+        )
+
         payload = {
             "messaging_product": "whatsapp",
             "to": to,
             "type": "text",
             "text": {"body": answer},
         }
+        logger.debug(
+            f"Payload (without message body): {json.dumps({**payload, 'text': {'body': '...'}})}"
+        )
 
         async with aiohttp.ClientSession() as session:
             async with session.post(url, headers=headers, json=payload) as response:
-                if response.status == 200:
-                    # logger.info("Message sent successfully")
-                    pass
+                status_code = response.status
+                logger.info(f"WhatsApp API response status: {status_code}")
+
+                if status_code == 200:
+                    response_body = await response.text()
+                    logger.info("Message sent successfully")
+                    logger.debug(f"Response body: {response_body}")
+                    return response_body
                 else:
                     error_text = await response.text()
                     logger.error(
-                        f"Failed to send message. Status: {response.status}, Response: {error_text}"
+                        f"Failed to send message. Status: {status_code}, Response: {error_text}"
                     )
                     raise Exception(f"WhatsApp API error: {error_text}")
 

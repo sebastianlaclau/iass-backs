@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Optional, Dict
 from typing import List, Any
 from .enums import MessageRole, InformationType, ConversationStatus
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -13,7 +13,7 @@ class Message:
     content: str
     whatsapp_message_id: Optional[str] = None
     metadata: Optional[Dict] = None
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     function_called: Optional[str] = None
     function_args: Optional[Dict] = None
     info_type: InformationType = InformationType.UNSPECIFIED

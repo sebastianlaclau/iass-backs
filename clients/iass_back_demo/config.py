@@ -7,7 +7,6 @@ class DemoClientSettings(BaseSettings):
     # Client-specific settings
     LABEL_DEMO: str = "Demo"
 
-    # WABA settings - use the exact names from your environment variables
     PHONE_NUMBER_DEMO: str
     FB_WABA_DEMO: str
     FB_PERMANENT_TOKEN_DEMO: str
@@ -22,12 +21,12 @@ class DemoClientSettings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str
 
     class Config:
-        env_file = ".env"
+        env_file = "clients/iass_back_demo/.env"
         env_file_encoding = "utf-8"
         extra = "allow"  # Allow extra fields
 
-    def get_waba_config(self) -> WABAConfig:
-        """Convert settings to WABAConfig"""
+    def create_waba_config(self) -> WABAConfig:
+        """Create initial WABA configuration from settings"""
         return WABAConfig(
             phone_number=self.PHONE_NUMBER_DEMO,
             waba_id=self.FB_WABA_DEMO,

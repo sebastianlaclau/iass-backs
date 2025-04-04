@@ -7,8 +7,10 @@ import aiohttp
 from typing import Dict, Any, List
 from openai import OpenAI, AsyncOpenAI, NotFoundError, BadRequestError
 
+from core.services.waba import get_waba_config
 
-from core.utils.helpers import get_waba_config, WABAConfig
+
+from core.utils.helpers import WABAConfig
 from core.utils.cache import blocked_threads_cache
 
 from core.services.supabase import (

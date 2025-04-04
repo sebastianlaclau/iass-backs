@@ -1,6 +1,11 @@
 from enum import Enum
 
 
+class InstructionsStrategy(Enum):
+    SINGLE = "single"
+    CLASSIFIED = "classified"
+
+
 class InformationType(str, Enum):
     BRIEF = "brief"
     FULL = "full"

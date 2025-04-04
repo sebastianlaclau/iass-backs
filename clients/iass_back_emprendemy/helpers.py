@@ -1,5 +1,4 @@
-# clients/iass-back-emprendemy/helpers.py
-from datetime import datetime
+# clients/iass_back_emprendemy/helpers.py
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import logging
@@ -15,6 +14,7 @@ from .constants import EMPRENDEMY_CONTACT_INFO
 
 from core.models.config import ClientConfig
 from core.config import config_manager
+from datetime import datetime
 
 # ------------------------------------------------------------------------
 # TOOLS RELATED FUNCTIONS
@@ -193,7 +193,9 @@ def generate_email_content(
     )
 
     # Format timestamp
-    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    timestamp = timestamp = datetime.now(datetime.timezone.utc).strftime(
+        "%d/%m/%Y %H:%M:%S"
+    )
 
     # Create HTML content with additional environment info
     html_content = f"""

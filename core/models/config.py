@@ -5,6 +5,8 @@ from pydantic_settings import BaseSettings
 from fastapi import APIRouter
 import os
 
+from core.models.enums import InstructionsStrategy
+
 
 class ProjectConfig(BaseSettings):
     """Base configuration all others inherit from"""
@@ -38,6 +40,8 @@ class ProjectConfig(BaseSettings):
     SENDER_EMAIL: str = ""
     ADMIN_EMAIL: str = ""
     EMAIL_PASSWORD: str = ""
+
+    FB_VERIFY_TOKEN: str = "prasath"
 
     # Estas propiedades y métodos existen en la clase Settings porque son operaciones relacionadas directamente con la configuración, no con la lógica general de la aplicación
 
@@ -82,7 +86,7 @@ class ProjectConfig(BaseSettings):
         return phone in self.sync_enabled_phones
 
     class Config:
-        env_file = ".env"
+        env_file = "core/.env"
         env_file_encoding = "utf-8"
         extra = "allow"
 
@@ -99,16 +103,31 @@ class WABAConfig(BaseModel):
     openai_assist_id: Optional[str] = None
     openai_api_key: Optional[str] = None
 
+    # Add instructions_strategy with default value
+    instructions_strategy: InstructionsStrategy = InstructionsStrategy.SINGLE
+
 
 class ClientConfig(BaseModel):
     """Client-specific configuration"""
 
+    # Campos existentes
     name: str
     base_path: str
     settings: Dict[str, Any] = Field(default_factory=dict)
     waba_config: WABAConfig
     routers: List[APIRouter] = []
     config_class: Optional[Type[BaseSettings]] = None
+
+    # Nuevos campos para registro y fábrica
+    client_id: str  # Identificador único del cliente
+    module_path: (
+        str  # Ruta al módulo principal del cliente (ej: "clients.iass_back_demo.main")
+    )
+    mount_path: str  # Ruta donde montar la aplicación (ej: "/api/v1/demo")
+    enabled: bool = True  # Permite activar/desactivar clientes
+    app_instance: Optional[Any] = (
+        None  # Para almacenar la instancia de aplicación (cache)
+    )
 
     def get_full_config(self) -> BaseSettings:
         """Get client-specific configuration instance"""

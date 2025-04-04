@@ -2,7 +2,7 @@
 import logging
 import asyncio
 from typing import Dict, List
-from datetime import datetime
+from datetime import datetime, timezone
 from cachetools import TTLCache
 from core.models.enums import MessageRole
 from core.models.waba import WABAConfig
@@ -53,7 +53,7 @@ class MessageBufferManager:
             {
                 **message_data,
                 "processed": False,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
 
@@ -103,9 +103,11 @@ class MessageBufferManager:
             self.max_wait = max_wait
 
         async def __aenter__(self):
-            start_time = datetime.now()
+            from datetime import datetime, timezone
+
+            start_time = datetime.now(timezone.utc)
             while self.manager.is_locked(self.buffer_key):
-                if (datetime.now() - start_time).seconds > self.max_wait:
+                if (datetime.now(timezone.utc) - start_time).seconds > self.max_wait:
                     raise TimeoutError(
                         f"Could not acquire lock for {self.buffer_key} after {self.max_wait} seconds"
                     )
@@ -164,141 +166,6 @@ class MessageBufferManager:
             if msg["message"]["id"] not in processing_message_ids
         ]
         return len(new_pending) > 0
-
-
-async def process_buffered_messages(service_container):
-    """Process all buffered messages across all active conversations"""
-    try:
-        # Obtenemos el message_buffer_manager del contenedor de servicios
-        message_buffer_manager = service_container.message_buffer_manager
-
-        buffer_keys = list(message_buffer_manager.buffer.keys())
-        for buffer_key in buffer_keys:
-            try:
-                async with message_buffer_manager.with_lock(buffer_key):
-                    buffer_data = message_buffer_manager.buffer[buffer_key]
-
-                    # Get metadata and messages
-                    metadata = buffer_data["metadata"]
-                    waba_conf = metadata["waba_conf"]
-                    sender = metadata["sender"]
-                    conversation_id = metadata["conversation_id"]
-
-                    # Get unprocessed messages
-                    unprocessed_messages = [
-                        msg
-                        for msg in buffer_data["messages"]
-                        if not msg.get("processed", False)
-                    ]
-
-                    if not unprocessed_messages:
-                        logger.debug(
-                            f"No unprocessed messages for buffer: {buffer_key}"
-                        )
-                        continue
-
-                    # Get message IDs for processing
-                    current_processing_ids = [
-                        msg["message"]["id"] for msg in unprocessed_messages
-                    ]
-
-                    # Importamos OpenAIHandler y lo inicializamos con el service_container
-                    from core.services.openai import OpenAIHandler
-
-                    # Process messages with OpenAI
-                    openai_handler = OpenAIHandler(
-                        waba_conf,
-                        sender,
-                        conversation_id,
-                        current_processing_ids,
-                        service_container,  # Pasamos el contenedor de servicios
-                    )
-                    await openai_handler.handle_openai_process()
-
-                    # Mark messages as processed
-                    message_buffer_manager.mark_messages_processed(
-                        buffer_key, current_processing_ids
-                    )
-
-            except Exception as e:
-                logger.error(
-                    f"Error processing buffer {buffer_key}: {str(e)}", exc_info=True
-                )
-                # Continue processing other buffers even if one fails
-                continue
-
-    except Exception as e:
-        logger.error(f"Error in process_buffered_messages: {str(e)}", exc_info=True)
-        raise
-
-
-# class WABAConfigCache:
-#     def __init__(self):
-#         self._cache = {}
-
-#     async def get_config(self, waba_id: str) -> WABAConfig:
-#         logger.debug(f"Getting config for WABA {waba_id}")
-#         try:
-#             if waba_id in self._cache:
-#                 logger.debug(f"Cache hit for WABA {waba_id}")
-#                 return self._cache[waba_id]
-
-#             logger.info(f"Cache miss for WABA {waba_id}, loading from DB")
-#             config = await self._load_from_db(waba_id)
-#             self._cache[waba_id] = config
-#             return config
-
-#         except Exception as e:
-#             logger.error(
-#                 f"Error getting config for WABA {waba_id}: {str(e)}", exc_info=True
-#             )
-#             raise
-
-#     async def invalidate(self, waba_id: str):
-#         if waba_id in self._cache:
-#             del self._cache[waba_id]
-
-#     async def _load_from_db(self, waba_id: str) -> WABAConfig:
-#         logger.debug(f"Loading WABA {waba_id} config from DB")
-#         try:
-#             waba_data = (
-#                 await supabase_client.from_("wabas")
-#                 .select("*")
-#                 .eq("waba_id", waba_id)
-#                 .single()
-#             )
-#             logger.debug(f"DB data retrieved for WABA {waba_id}: {waba_data}")
-
-#             # Combinar datos de DB con settings
-#             config = WABAConfig(
-#                 name=waba_data["name"],
-#                 phone_number=waba_data["phone_number"],
-#                 phone_number_id=waba_data["phone_number_id"],
-#                 permanent_token=waba_data["permanent_token"],
-#                 assistant_id=settings.OPENAI_ASSIST_ID_DEFAULT,
-#                 openai_key=settings.OPENAI_API_KEY_DEFAULT,
-#                 model=settings.OPENAI_MODEL_DEFAULT,
-#                 tools=DEMO_RUN_TOOLS_DEFINITION_EMPRENDEMY,
-#                 instructions_strategy=InstructionsStrategy.SINGLE,
-#                 pinecone_key=settings.PINECONE_KEY_DEFAULT,
-#                 temperature=0.3,
-#                 vector_store="",
-#                 waba_id=waba_id,
-#                 smtp_server=settings.SMTP_SERVER,
-#                 smtp_port=settings.SMTP_PORT,
-#                 sender_email=settings.SENDER_EMAIL,
-#                 admin_email=settings.ADMIN_EMAIL,
-#                 email_password=settings.EMAIL_PASSWORD,
-#             )
-
-#             logger.info(f"Successfully created WABAConfig for {waba_id}")
-#             return config
-
-#         except Exception as e:
-#             logger.error(
-#                 f"Failed to load WABA {waba_id} from DB: {str(e)}", exc_info=True
-#             )
-#             raise
 
 
 class ConversationContext:
